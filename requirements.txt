@@ -3,3 +3,5 @@ google-generativeai
 pandas
 requests
 python-dotenv
+telebot
+geocoder
