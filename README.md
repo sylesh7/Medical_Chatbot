@@ -4,6 +4,9 @@
 
 CURO BOT is an AI-powered chatbot and personalized healthcare assistant that provides medical guidance, medicine information, and emergency SOS alert features. It also includes live location sharing via a Telegram bot for emergency situations.
 
+Chatbot:
+https://curobot-skt.streamlit.app/
+
 ## 🚀 Features
 
 - **User Authentication**
