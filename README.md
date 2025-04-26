@@ -51,7 +51,7 @@ TELEGRAM_CHAT_IDS=chat_id1,chat_id2,..,chat_idn
 
 ### 4️⃣ Run the Application
 ```sh
-   streamlit run app.py
+   python -m streamlit run app.py
 ```
 
 ## 📷 Screenshots
