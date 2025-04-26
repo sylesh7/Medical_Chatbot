@@ -3,10 +3,11 @@ import google.generativeai as genai
 import pandas as pd
 import requests
 import os
-from streamlit.components.v1 import html
 import telebot
 import geocoder
 
+# ✅ Correct import
+# ❌ Don't import configure/generate_content separately
 
 if "name" not in st.session_state:
     st.session_state.name = ""  
@@ -15,26 +16,26 @@ if "chat_history" not in st.session_state:
 if "location" not in st.session_state:
     st.session_state.location = None  
 
+# ✅ First check API Key
 API_KEY = os.getenv("GEMINI_API_KEY")
-
 if not API_KEY:
     st.error("❌ API Key not found. Set GEMINI_API_KEY as an environment variable.")
     st.stop()
 
+# ✅ Configure after checking
 genai.configure(api_key=API_KEY)
-model = genai.GenerativeModel('gemini-pro')
 
-
-user_data = pd.read_csv("users.csv")
+# ✅ Create model instance
+model = genai.GenerativeModel(model_name="gemini-1.5-pro")  
 
 
 def get_gemini_response(input_text):
     try:
         response = model.generate_content(input_text)
-       
+
         if not response or not response.candidates or not response.candidates[0].content.parts:
             return "⚠️ No valid response from the AI. Try rephrasing your request."
-       
+
         response_text = response.candidates[0].content.parts[0].text
         return response_text
 
@@ -43,6 +44,7 @@ def get_gemini_response(input_text):
 
 
 def authenticate_user(username, password):
+    user_data = pd.read_csv("users.csv")
     if username in user_data["user_id"].values:
         stored_password = user_data.loc[user_data["user_id"] == username, "passwords"].values[0]
         if password == stored_password:
@@ -55,6 +57,7 @@ def authenticate_user(username, password):
 
 
 def create_new_account(new_userid, username, password, email, dob, height, weight, gender, blood_group):
+    user_data = pd.read_csv("users.csv")
     if len(password) < 8:
         st.warning("⚠️ Password must be at least 8 characters long.")
         return
@@ -100,7 +103,7 @@ def main():
 
 def chat_page():
     st.markdown("<h1 style='text-align: center; color:#28b463;'>CURO BOT🤖</h1>", unsafe_allow_html=True)
-    st.markdown("<h5 style='text-align: center; color:#28b463;'>WHERE TECHNOLOGY MEETS CARE</h1>", unsafe_allow_html=True)
+    st.markdown("<h5 style='text-align: center; color:#28b463;'>WHERE TECHNOLOGY MEETS CARE</h5>", unsafe_allow_html=True)
     chat = st.chat_input("Say something...")
 
     if chat:
@@ -144,46 +147,29 @@ def predictor():
         st.write(response)
 
 
-with st.sidebar:
-    st.title("Curo Bot")
-    pages_select = st.selectbox("Navigation", ["Login", "Chatbot", "Personalised Medicine", "Medicine Info", "Emergency SOS"])
+def emergency_sos():
+    st.title("🚨 SOS Alert System")
+    st.write("Send an emergency alert via Telegram bot with live location.")
 
-    st.header("Chat History")
-    for msg in st.session_state['chat_history']:
-        st.write(f"{msg}")
-
-
-if pages_select == "Login":
-    main()
-elif pages_select == "Chatbot":
-    chat_page()
-elif pages_select == "Personalised Medicine":
-    med()
-elif pages_select == "Medicine Info":
-    predictor()
-
-
-if pages_select == "Emergency SOS":
-    # Load environment variables
     TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
     CHAT_IDS = os.getenv("TELEGRAM_CHAT_IDS", "").split(",")
 
+    if not TELEGRAM_BOT_TOKEN or not CHAT_IDS:
+        st.error("❌ Telegram Bot credentials are missing. Set TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_IDS.")
+        return
+
+    name = st.text_input("Enter your name:", key="sos_name")
+    message = st.text_area("Enter your SOS message:", key="sos_message")
+
     def get_live_location():
-        """Fetches the user's live location using geocoder."""
-        g = geocoder.ip('me')  # Gets approximate location
+        g = geocoder.ip('me')
         if g.latlng:
-            return g.latlng  # Returns [latitude, longitude]
+            return g.latlng
         return None
 
     def send_sos_telegram(user_name, message):
-        """Sends an SOS message with live location via Telegram."""
-        if not TELEGRAM_BOT_TOKEN or not CHAT_IDS:
-            st.error("❌ Telegram Bot credentials are missing. Set TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_IDS.")
-            return
-
-        # Get live location
         location = get_live_location()
-        full_message = f"🚨 Emergency Alert!\n{name} needs urgent help!\n\n📩 Message: {message}"
+        full_message = f"🚨 Emergency Alert!\n{user_name} needs urgent help!\n\n📩 Message: {message}"
 
         if location:
             full_message += f"\n\n📍 Live Location: {location[0]}, {location[1]}"
@@ -200,16 +186,30 @@ if pages_select == "Emergency SOS":
             except Exception as e:
                 st.error(f"❌ Failed to send SOS Alert to {chat_id}: {e}")
 
-    # Streamlit UI
-    st.title("🚨 SOS Alert System")
-    st.write("Send an emergency alert via Telegram bot with live location.")
-
-    # Ensure unique keys for text inputs
-    name = st.text_input("Enter your name:", key="sos_name")
-    message = st.text_area("Enter your SOS message:", key="sos_message")
-
     if st.button("Send SOS Message"):
         if name and message:
             send_sos_telegram(name, message)
         else:
             st.warning("⚠️ Please fill in all fields.")
+
+
+# Sidebar Navigation
+with st.sidebar:
+    st.title("Curo Bot")
+    pages_select = st.selectbox("Navigation", ["Login", "Chatbot", "Personalised Medicine", "Medicine Info", "Emergency SOS"])
+
+    st.header("Chat History")
+    for msg in st.session_state['chat_history']:
+        st.write(f"{msg}")
+
+# Main Pages
+if pages_select == "Login":
+    main()
+elif pages_select == "Chatbot":
+    chat_page()
+elif pages_select == "Personalised Medicine":
+    med()
+elif pages_select == "Medicine Info":
+    predictor()
+elif pages_select == "Emergency SOS":
+    emergency_sos()
