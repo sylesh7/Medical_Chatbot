@@ -182,7 +182,7 @@ def emergency_sos():
                 bot.send_message(chat_id, full_message)
                 if location:
                     bot.send_location(chat_id, latitude=location[0], longitude=location[1])
-                st.success(f"✅ SOS Alert sent successfully to ")
+                st.success(f"✅ SOS Alert sent successfully ")
             except Exception as e:
                 st.error(f"❌ Failed to send SOS Alert : {e}")
 
